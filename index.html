@@ -129,31 +129,41 @@
     <!-- 2. To-Do List & AI Polisher Card -->
     <section class="glass-card rounded-2xl p-6 shadow-2xl space-y-6">
 
-      <!-- Input Bar -->
+      <!-- Input Bar (Separated Add Task with Date & Time) -->
       <div>
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-bold text-white flex items-center gap-2">
-            <span>Study To-Do List</span>
-          </h2>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div class="flex flex-wrap items-center gap-3">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>Study To-Do List</span>
+            </h2>
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#090e13] border border-slate-800 text-xs text-slate-300">
+              <span>📅</span>
+              <span id="currentDateDisplay" class="font-medium text-emerald-400">Today</span>
+            </div>
+          </div>
           <span id="logCount"
-            class="mono px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+            class="mono px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 self-start sm:self-auto">
             0 Tasks
           </span>
         </div>
 
-        <div class="flex flex-col sm:flex-row gap-3">
-          <input id="studyLogInput" type="text"
-            placeholder="Add a study task... (e.g., Fix MySQL connection error, feeling stuck today)"
+        <form id="addTaskForm" onsubmit="event.preventDefault(); handleAddTask();" class="flex flex-col sm:flex-row gap-2.5">
+          <input id="taskInput" type="text"
+            placeholder="Add a study task... (e.g., Fix MySQL connection timeout and test endpoints)"
             class="flex-1 rounded-xl bg-[#090e13] border border-slate-700/80 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-            onkeydown="if(event.key==='Enter') handlePolishTask()" />
-          <button id="polishBtn" type="button" onclick="handlePolishTask()"
-            class="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 text-sm font-bold shadow-lg shadow-emerald-500/20 transition whitespace-nowrap cursor-pointer">
-            ✨ Add &amp; Polish Task
+            required />
+
+          <div class="flex items-center gap-2 bg-[#090e13] border border-slate-700/80 rounded-xl px-3 py-2.5 sm:w-auto" title="Scheduled / Study Time">
+            <span class="text-slate-400 text-xs">⏰</span>
+            <input id="taskTimeInput" type="time"
+              class="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer" />
+          </div>
+
+          <button id="addTaskBtn" type="submit"
+            class="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-sm font-bold shadow-lg shadow-emerald-500/20 transition whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5">
+            <span>+ Add Task</span>
           </button>
-        </div>
-        <p id="polishLoader" class="text-xs text-emerald-400 mt-2.5 hidden animate-pulse">
-          ⚡ Polishing task &amp; syncing context with AI Mentor...
-        </p>
+        </form>
       </div>
 
       <!-- 3 AI Output Cards -->
@@ -161,21 +171,21 @@
         <div class="rounded-xl bg-[#090e13]/90 border border-emerald-500/25 p-4">
           <div class="text-xs font-semibold text-emerald-400 mb-1.5">✨ Polished Goal</div>
           <p id="polishedOutput" class="text-xs text-slate-300 leading-relaxed">
-            Add a task above to reframe it into a clear, actionable goal.
+            Add a task below and click "✨ Polish" to reframe it into an actionable goal.
           </p>
         </div>
 
         <div class="rounded-xl bg-[#090e13]/90 border border-slate-800 p-4">
           <div class="text-xs font-semibold text-amber-400 mb-1.5">💛 Mentor Boost</div>
           <p id="motivationOutput" class="text-xs text-slate-300 leading-relaxed">
-            Encouragement matched to your current mood appears here.
+            Personalized encouragement matched to your mood will appear here.
           </p>
         </div>
 
         <div class="rounded-xl bg-[#090e13]/90 border border-slate-800 p-4">
           <div class="text-xs font-semibold text-cyan-400 mb-1.5">🎯 15-Min First Step</div>
           <p id="nextStepOutput" class="text-xs text-slate-300 leading-relaxed">
-            Your immediate micro-step to start right away appears here.
+            Your immediate micro-step to start right away will appear here.
           </p>
         </div>
       </div>
@@ -183,11 +193,11 @@
       <!-- Interactive To-Do Checklist -->
       <div class="pt-2">
         <div class="flex items-center justify-between text-xs text-slate-400 mb-3 px-1">
-          <span>Today's Tasks (Polished vs. Original)</span>
-          <span>Click checkbox to complete</span>
+          <span>Today's Tasks</span>
+          <span>Click checkbox to complete • Click "✨ Polish" anytime</span>
         </div>
 
-        <div id="timelineList" class="space-y-2.5">
+        <div id="timelineList" class="space-y-3">
           <div class="text-center py-10 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
             Your study to-do list is empty. Add your first task above!
           </div>
@@ -273,12 +283,29 @@
 
     // Initialize UI on Load
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("studentName").value = studentProfile.name;
-      document.getElementById("studentGoal").value = studentProfile.goal;
+      document.getElementById("studentName").value = studentProfile.name || "";
+      document.getElementById("studentGoal").value = studentProfile.goal || "";
       document.getElementById("studentMood").value = studentProfile.mood || "Okay";
-      document.getElementById("studentStruggle").value = studentProfile.struggle;
+      document.getElementById("studentStruggle").value = studentProfile.struggle || "";
+      updateDateDisplay();
       renderTasks();
     });
+
+    // Update Date & Initial Time Display
+    function updateDateDisplay() {
+      const now = new Date();
+      const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+      const dateStr = now.toLocaleDateString('en-US', options);
+      const dateEl = document.getElementById("currentDateDisplay");
+      if (dateEl) dateEl.textContent = dateStr;
+
+      const timeInput = document.getElementById("taskTimeInput");
+      if (timeInput && !timeInput.value) {
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        timeInput.value = `${hours}:${minutes}`;
+      }
+    }
 
     // Toggle Floating AI Widget
     function toggleChatWidget() {
@@ -310,21 +337,66 @@
       document.getElementById("studentGoal").value = "Full-Stack APIs & Cybersecurity";
       document.getElementById("studentMood").value = "Stressed";
       document.getElementById("studentStruggle").value = "Handling API rate limits & async errors";
-      document.getElementById("studyLogInput").value = "Fix MySQL connection timeout and test Vercel API endpoint";
       document.getElementById("profileForm").dispatchEvent(new Event("submit"));
+
+      const taskInput = document.getElementById("taskInput");
+      taskInput.value = "Fix MySQL connection timeout and test Vercel API endpoint";
+      updateDateDisplay();
+
+      // If to-do list is empty, automatically add the demo task so user can see it and test Polish
+      if (tasks.length === 0) {
+        handleAddTask();
+      }
     });
 
-    // Add & Polish Task (POST mode: "polish")
-    async function handlePolishTask() {
-      const input = document.getElementById("studyLogInput");
-      const btn = document.getElementById("polishBtn");
-      const loader = document.getElementById("polishLoader");
+    // 1. ADD TASK (Separated from Polishing)
+    function handleAddTask() {
+      const input = document.getElementById("taskInput");
+      const timeInput = document.getElementById("taskTimeInput");
       const text = input.value.trim();
 
       if (!text) return;
 
-      btn.disabled = true;
-      loader.classList.remove("hidden");
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+      let formattedTime = "Anytime";
+      if (timeInput && timeInput.value) {
+        const [h, m] = timeInput.value.split(":");
+        const hours = parseInt(h, 10);
+        const suffix = hours >= 12 ? "PM" : "AM";
+        const stdHour = hours % 12 || 12;
+        formattedTime = `${stdHour}:${m} ${suffix}`;
+      }
+
+      const newTask = {
+        id: Date.now(),
+        text: text,
+        original: text,
+        time: formattedTime,
+        date: dateStr,
+        isPolished: false,
+        polished: "",
+        motivation: "",
+        nextStep: "",
+        done: false,
+        polishing: false
+      };
+
+      tasks.unshift(newTask);
+      localStorage.setItem("mm_tasks", JSON.stringify(tasks));
+      input.value = "";
+      renderTasks();
+    }
+
+    // 2. POLISH SPECIFIC TASK (Triggered when user clicks "Polish")
+    async function handlePolishSpecificTask(id) {
+      const taskIndex = tasks.findIndex(t => t.id === id);
+      if (taskIndex === -1) return;
+
+      const task = tasks[taskIndex];
+      task.polishing = true;
+      renderTasks();
 
       try {
         const res = await fetch(API_URL, {
@@ -332,7 +404,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             mode: "polish",
-            text,
+            text: task.original || task.text,
             studentProfile
           })
         });
@@ -340,27 +412,21 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to polish task");
 
-        // Update 3 Output Cards
+        task.polished = data.polished;
+        task.motivation = data.motivation;
+        task.nextStep = data.nextStep;
+        task.isPolished = true;
+
+        // Update the 3 highlight cards with this polished goal
         document.getElementById("polishedOutput").textContent = data.polished;
         document.getElementById("motivationOutput").textContent = data.motivation;
         document.getElementById("nextStepOutput").textContent = data.nextStep;
-
-        // Save to To-Do List
-        tasks.unshift({
-          id: Date.now(),
-          original: text,
-          polished: data.polished,
-          nextStep: data.nextStep,
-          done: false
-        });
-        localStorage.setItem("mm_tasks", JSON.stringify(tasks));
-        input.value = "";
-        renderTasks();
       } catch (err) {
         alert("Backend Error: " + err.message);
       } finally {
-        btn.disabled = false;
-        loader.classList.add("hidden");
+        task.polishing = false;
+        localStorage.setItem("mm_tasks", JSON.stringify(tasks));
+        renderTasks();
       }
     }
 
@@ -374,20 +440,80 @@
         return;
       }
 
-      list.innerHTML = tasks.map(t => `
-                <div class="flex items-start justify-between gap-3 p-3.5 rounded-xl bg-[#090e13] border ${t.done ? 'border-emerald-500/20 opacity-60' : 'border-slate-800 hover:border-slate-700'} transition">
-                    <div class="flex items-start gap-3">
-                        <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleTask(${t.id})"
-                            class="mt-1 w-4 h-4 accent-emerald-500 rounded cursor-pointer" />
-                        <div class="space-y-1">
-                            <p class="text-xs font-semibold ${t.done ? 'line-through text-slate-500' : 'text-white'}">${t.polished}</p>
-                            <p class="text-[11px] text-slate-400">Original: "${t.original}"</p>
-                            ${t.nextStep ? `<p class="text-[11px] text-emerald-400">🎯 Step: ${t.nextStep}</p>` : ""}
-                        </div>
+      list.innerHTML = tasks.map(t => {
+        const isPolished = !!t.isPolished || (t.polished && t.polished !== t.original);
+        const isPolishing = !!t.polishing;
+
+        return `
+          <div class="p-4 rounded-xl bg-[#090e13] border ${t.done ? 'border-emerald-500/20 opacity-60' : 'border-slate-800 hover:border-slate-700/80'} transition space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3 flex-1 min-w-0">
+                <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleTask(${t.id})"
+                  class="mt-1 w-4 h-4 accent-emerald-500 rounded cursor-pointer shrink-0" />
+
+                <div class="space-y-1.5 flex-1 min-w-0">
+                  <!-- Meta badges: Date, Time & Polish status -->
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
+                      📅 ${t.date || "Today"}
+                    </span>
+                    <span class="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-950/30 border border-emerald-800/40 px-2 py-0.5 rounded">
+                      ⏰ ${t.time || "Anytime"}
+                    </span>
+                    ${isPolished 
+                      ? `<span class="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">✨ Polished</span>`
+                      : `<span class="inline-flex items-center text-[10px] font-medium text-slate-400 bg-slate-800/60 border border-slate-700/60 px-2 py-0.5 rounded-full">Raw Task</span>`
+                    }
+                  </div>
+
+                  <!-- Task text content -->
+                  ${isPolished ? `
+                    <div class="space-y-1">
+                      <p class="text-sm font-semibold ${t.done ? 'line-through text-slate-500' : 'text-emerald-300'} leading-snug">
+                        ${t.polished}
+                      </p>
+                      <p class="text-[11px] text-slate-400 italic">
+                        Original: "${t.original || t.text}"
+                      </p>
                     </div>
-                    <button onclick="deleteTask(${t.id})" class="text-slate-500 hover:text-rose-400 text-xs px-1.5 py-0.5 cursor-pointer">✕</button>
+                  ` : `
+                    <p class="text-sm font-medium ${t.done ? 'line-through text-slate-500' : 'text-slate-200'} leading-snug">
+                      ${t.text || t.original}
+                    </p>
+                  `}
+
+                  <!-- Polish Actionable step / Motivation (if polished) -->
+                  ${isPolished && (t.nextStep || t.motivation) ? `
+                    <div class="flex flex-wrap gap-2 pt-1.5">
+                      ${t.nextStep ? `<span class="text-[11px] text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-2.5 py-1 rounded-lg">🎯 <strong>Step:</strong> ${t.nextStep}</span>` : ""}
+                      ${t.motivation ? `<span class="text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800/40 px-2.5 py-1 rounded-lg">💛 <strong>Boost:</strong> ${t.motivation}</span>` : ""}
+                    </div>
+                  ` : ""}
                 </div>
-            `).join("");
+              </div>
+
+              <!-- Right Actions: Polish Button & Delete -->
+              <div class="flex items-center gap-2 shrink-0">
+                ${!isPolished ? `
+                  <button type="button" onclick="handlePolishSpecificTask(${t.id})" ${isPolishing ? "disabled" : ""}
+                    class="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 hover:border-emerald-400 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 shadow-sm">
+                    ${isPolishing ? `<span class="animate-spin text-xs">⚡</span><span>Polishing...</span>` : `<span>✨ Polish</span>`}
+                  </button>
+                ` : `
+                  <button type="button" onclick="handlePolishSpecificTask(${t.id})" ${isPolishing ? "disabled" : ""}
+                    class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-300 border border-slate-700 text-[11px] font-medium transition cursor-pointer disabled:opacity-50" title="Re-polish with AI">
+                    ${isPolishing ? `<span>⚡...</span>` : `<span>🔄 Re-polish</span>`}
+                  </button>
+                `}
+                <button type="button" onclick="deleteTask(${t.id})"
+                  class="text-slate-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-800/60 transition cursor-pointer text-xs" title="Delete Task">
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
     }
 
     function toggleTask(id) {
@@ -429,7 +555,12 @@
           body: JSON.stringify({
             mode: "chat",
             studentProfile,
-            studyHistory: tasks,
+            studyHistory: tasks.map(t => ({
+              done: t.done,
+              task: t.isPolished ? t.polished : (t.text || t.original),
+              time: t.time,
+              date: t.date
+            })),
             chatMessage
           })
         });
