@@ -1,6 +1,5 @@
 {
-    "name": "mastermind-ai-backend",
+    "name": "mastermind-backend",
     "version": "1.0.0",
-    "private": true,
     "type": "module"
 }

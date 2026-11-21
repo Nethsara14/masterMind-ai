@@ -1,26 +1,47 @@
-async function callGeminiWithFallback(payload, apiKeys) {
-    let lastError = null;
+async function askGemini(systemPrompt, userMessage, apiKeys) {
+    // 1st try: Primary key + gemini-3.8-flash | 2nd try (503 spike awoth): Backup key + flash-lite
+    const attempts = [
+        { key: apiKeys[0], model: 'gemini-3.8-flash' },
+        { key: apiKeys[1] || apiKeys[0], model: 'gemini-3.8-flash-lite' },
+        { key: apiKeys[2] || apiKeys[0], model: 'gemini-3.8-flash' },
+    ];
 
-    for (const key of apiKeys) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${key}`;
+    let lastError = 'API Error';
+
+    for (const { key, model } of attempts) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+                generationConfig: {
+                    maxOutputTokens: 180,
+                    thinkingConfig: { thinkingBudget: 0 },
+                },
+            }),
         });
 
         const data = await response.json();
-        if (response.ok) return data;
+
+        if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+            return data.candidates[0].content.parts[0].text;
+        }
 
         lastError = data.error?.message || `HTTP ${response.status}`;
 
-        // 429 (Rate Limit), 503 (High Demand), හෝ 500 error එකක් ආවොත් ඊළඟ Key එකට මාරු වෙයි
-        if (![429, 503, 500].includes(response.status)) {
-            throw new Error(lastError);
+        // 503 (High demand) ho 429 nam podi welawak indala ilanga key/model ekata yanawa
+        if ([503, 429, 500].includes(response.status)) {
+            await new Promise((r) => setTimeout(r, 600));
+            continue;
         }
+
+        throw new Error(lastError);
     }
 
-    throw new Error(lastError || 'All backup API keys failed.');
+    throw new Error(lastError);
 }
 
 export default async function handler(req, res) {
@@ -29,106 +50,74 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     const apiKeys = [process.env.GEMINI_API_KEY, process.env.GEMINI_API_KEY_2, process.env.GEMINI_API_KEY_3].filter(Boolean);
 
-    if (apiKeys.length === 0) {
-        return res.status(500).json({ error: 'Server error: No GEMINI_API_KEY configured.' });
-    }
+    if (apiKeys.length === 0) return res.status(500).json({ error: 'Missing API Key' });
 
     try {
         const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
         const { mode, studentProfile, studyHistory } = body;
-        const rawText = (body.text || body.task || body.rawTask || '').trim();
+        const rawText = (body.text || body.task || '').trim();
         const rawChatMessage = (body.chatMessage || body.message || '').trim();
 
-        if (!mode) return res.status(400).json({ error: "Missing 'mode'" });
+        const profileStr = typeof studentProfile === 'object' && studentProfile !== null ? `Name: ${studentProfile.name || 'Student'}, Goal: ${studentProfile.goal || 'Coding'}, Mood: ${studentProfile.mood || 'Okay'}, Struggle: ${studentProfile.struggle || 'None'}` : String(studentProfile || 'Student');
 
-        const profileStr = typeof studentProfile === 'object' && studentProfile !== null ? `${studentProfile.name || ''}|Goal:${studentProfile.goal || ''}|Mood:${studentProfile.mood || ''}|Struggle:${studentProfile.struggle || ''}` : String(studentProfile || 'None').slice(0, 150);
-
-        // =========================================================================
-        // 1. POLISHER ENDPOINT (mode === "polish")
-        // =========================================================================
+        // =====================================================================
+        // 1. TASK POLISHER MODE
+        // =====================================================================
         if (mode === 'polish') {
-            if (!rawText) return res.status(400).json({ error: "Missing 'text'" });
+            if (!rawText) return res.status(400).json({ error: 'Missing task text' });
 
-            const prompt = `Context(${profileStr}). Reframe task into JSON:
-- polished: positive actionable goal (max 15 words)
-- motivation: mood-matched boost (max 15 words)
-- nextStep: 15-min micro-step (max 15 words)
-Task: "${rawText.slice(0, 300)}"`;
+            const systemPrompt = `You are Mastermind AI Task Polisher.
+Student Context: ${profileStr}
+RULES:
+- Reply ONLY with valid raw JSON (no markdown).
+- Format: {"polished":"...","motivation":"...","nextStep":"..."}
+- Keep each value under 14 words, practical, and encouraging.`;
 
-            const data = await callGeminiWithFallback(
-                {
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: {
-                        maxOutputTokens: 220,
-                        thinkingConfig: { thinkingBudget: 0 },
-                        responseMimeType: 'application/json',
-                        responseSchema: {
-                            type: 'OBJECT',
-                            properties: {
-                                polished: { type: 'STRING' },
-                                motivation: { type: 'STRING' },
-                                nextStep: { type: 'STRING' },
-                            },
-                            required: ['polished', 'motivation', 'nextStep'],
-                        },
-                    },
-                },
-                apiKeys,
-            );
-
-            const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-            const parsed = JSON.parse(responseText.replace(/```json|```/g, '').trim());
+            const reply = await askGemini(systemPrompt, `Task: ${rawText.slice(0, 250)}`, apiKeys);
+            const parsed = JSON.parse(reply.replace(/```json|```/g, '').trim());
 
             return res.status(200).json({
-                polished: parsed.polished || '',
-                motivation: parsed.motivation || '',
-                nextStep: parsed.nextStep || '',
+                polished: parsed.polished || rawText,
+                motivation: parsed.motivation || 'You got this! One step at a time.',
+                nextStep: parsed.nextStep || 'Break this task into a 15-minute test.',
             });
         }
 
-        // =========================================================================
-        // 2. MENTOR CHAT ENDPOINT (mode === "chat")
-        // =========================================================================
+        // =====================================================================
+        // 2. MENTOR CHAT MODE (With your Singlish/English/Sinhala Rules)
+        // =====================================================================
         if (mode === 'chat') {
-            if (!rawChatMessage) return res.status(400).json({ error: "Missing 'chatMessage'" });
+            if (!rawChatMessage) return res.status(400).json({ error: 'Missing chat message' });
 
-            let historyStr = 'None';
-            if (Array.isArray(studyHistory) && studyHistory.length > 0) {
-                historyStr = studyHistory
-                    .slice(-6)
-                    .map((t) => `${t.done ? '[x]' : '[ ]'} ${t.polished || t.task || t.text || JSON.stringify(t)}`)
-                    .join('; ');
-            } else if (typeof studyHistory === 'string' && studyHistory.trim()) {
-                historyStr = studyHistory.slice(0, 400);
-            }
+            const tasksStr =
+                Array.isArray(studyHistory) && studyHistory.length > 0
+                    ? studyHistory
+                          .slice(-5)
+                          .map((t) => `${t.done ? '[Done]' : '[Todo]'} ${t.polished || t.task || ''}`)
+                          .join(' | ')
+                    : 'No tasks yet';
 
-            const systemPrompt = `You are Mastermind, a concise AI study mentor. Use context to give direct, practical advice in 2-4 short sentences.
-Profile: ${profileStr}
-Tasks: ${historyStr}`;
+            const systemPrompt = `You are Mastermind, a friendly AI Study & Coding Mentor.
+Student Profile: ${profileStr}
+Current To-Do List: ${tasksStr}
 
-            const data = await callGeminiWithFallback(
-                {
-                    systemInstruction: { parts: [{ text: systemPrompt }] },
-                    contents: [{ role: 'user', parts: [{ text: rawChatMessage.slice(0, 500) }] }],
-                    generationConfig: {
-                        maxOutputTokens: 250,
-                        thinkingConfig: { thinkingBudget: 0 },
-                    },
-                },
-                apiKeys,
-            );
+CRITICAL LANGUAGE & LENGTH RULES:
+1. DO NOT MIX ALPHABETS.
+2. If the user types in SINGLISH (Sinhala in English letters, e.g. "mk", "kohomada"): Reply PURELY IN friendly SINGLISH using English letters.
+3. If the user types in ENGLISH: Reply purely in English.
+4. If the user types in SINHALA SCRIPT: Reply purely in Sinhala script.
+5. Keep replies SHORT & COMPACT (2 to 3 short sentences max) because the chat widget is small.`;
 
-            const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response.';
-            return res.status(200).json({ reply: replyText });
+            const reply = await askGemini(systemPrompt, rawChatMessage.slice(0, 400), apiKeys);
+            return res.status(200).json({ reply });
         }
 
-        return res.status(400).json({ error: `Invalid mode '${mode}'` });
+        return res.status(400).json({ error: 'Invalid mode' });
     } catch (error) {
-        console.error('Mentor API Error:', error);
-        return res.status(500).json({ error: error.message || 'Internal Server Error' });
+        return res.status(500).json({ error: error.message });
     }
 }
