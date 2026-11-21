@@ -1,231 +1,453 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mastermind — Student Study To-Do &amp; AI Mentor</title>
+  <title>Mastermind — Study To-Do & AI Mentor</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
   <style>
-    body { font-family: 'Inter', sans-serif; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b1116;
+      background-image:
+        radial-gradient(circle at 15% 25%, rgba(16, 185, 129, 0.07) 0%, transparent 40%),
+        radial-gradient(circle at 85% 75%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        radial-gradient(#1e293b 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 36px 36px;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .glass-card {
+      background: rgba(15, 23, 30, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+    }
+
+    .chat-popup-enter {
+      animation: popIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
 
-  <!-- Top Header -->
-  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-sm shadow-md shadow-indigo-500/20">
-          M
-        </div>
-        <div class="flex items-baseline gap-2">
-          <h1 class="text-base font-bold tracking-tight text-white">Mastermind</h1>
-          <span class="hidden sm:inline text-xs text-slate-400">Smart Study To-Do &amp; AI Mentor</span>
-        </div>
+<body class="text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- Top Navbar (Portfolio Style) -->
+  <header class="border-b border-slate-800/80 bg-[#0b1116]/85 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-lg font-extrabold tracking-tight text-white">
+          Master<span class="text-emerald-400">mind</span>
+        </span>
+        <span
+          class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          AI Study Workspace
+        </span>
       </div>
 
-      <!-- Feature 5: 1-Click Demo Preset Button (Member 3 - polisher.js) -->
-      <button
-        id="demoBtn"
-        type="button"
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/25 transition cursor-pointer"
-      >
-        <span>⚡ Fill Demo Data</span>
-      </button>
+      <div class="flex items-center gap-3">
+        <button id="demoBtn" type="button"
+          class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#131d26] text-emerald-300 border border-emerald-500/30 hover:border-emerald-400 hover:bg-emerald-500/10 transition cursor-pointer">
+          <span>⚡ Fill Demo Data</span>
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- Split Workspace: Main Student To-Do List (Left 8 Cols) + Side AI Mentor Chat (Right 4 Cols) -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+  <!-- Main Centered Workspace -->
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6 pb-28">
 
-      <!-- MAIN UI (LEFT 8 COLS): Student Study To-Do List + AI Task Polisher -->
-      <div class="lg:col-span-8 space-y-4">
+    <!-- Hero Heading -->
+    <div class="space-y-2">
+      <div
+        class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+        <span>Active Study Session</span>
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+        Organize your <span class="text-emerald-400">study goals</span> with AI.
+      </h1>
+      <p class="text-sm text-slate-400 max-w-2xl">
+        Add raw tasks or coding blockers below. Gemini reframes them into clear goals, and your personal AI Mentor in
+        the bottom-right corner tracks your progress.
+      </p>
+    </div>
 
-        <!-- Compact Student Context Bar (Feature 1 - Member 3: polisher.js) -->
-        <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg">
-          <form id="profileForm" class="space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold uppercase tracking-wider text-indigo-400">🎓 Student Context (Feeds AI Mentor)</span>
-              <div class="flex items-center gap-2">
-                <span id="profileStatus" class="text-xs font-medium text-emerald-400 hidden">Saved ✓</span>
-                <button
-                  id="saveProfileBtn"
-                  type="submit"
-                  class="px-3 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition cursor-pointer"
-                >
-                  Save Context
-                </button>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-              <input
-                id="studentName"
-                type="text"
-                placeholder="Name (e.g., Pasindu)"
-                class="rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                required
-              />
-              <input
-                id="studentGoal"
-                type="text"
-                placeholder="Goal (e.g., Java & APIs)"
-                class="rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                required
-              />
-              <select
-                id="studentMood"
-                class="rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-              >
-                <option value="Stressed">😫 Mood: Stressed</option>
-                <option value="Okay" selected>😐 Mood: Okay</option>
-                <option value="Motivated">🔥 Mood: Motivated</option>
-              </select>
-              <input
-                id="studentStruggle"
-                type="text"
-                placeholder="Struggle (e.g., Async bugs)"
-                class="rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-              />
-            </div>
-          </form>
-        </section>
-
-        <!-- HERO TO-DO LIST & AI POLISHER CARD (Features 2 & 4) -->
-        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-5">
-
-          <!-- Add Study Task Input Bar (Feature 2 - Member 3: polisher.js) -->
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                <span>✅ My Study To-Do List</span>
-              </h2>
-              <span id="logCount" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-                0 Tasks
-              </span>
-            </div>
-            <p class="text-xs text-slate-400 mb-3">
-              Add a study task or write what you're stuck on—Gemini polishes it into a motivating goal and updates your Mentor.
-            </p>
-
-            <div class="flex flex-col sm:flex-row gap-2.5">
-              <input
-                id="studyLogInput"
-                type="text"
-                placeholder="Add a study task... (e.g., Fix MySQL connection error, feeling stuck today)"
-                class="flex-1 rounded-xl bg-slate-950 border border-slate-700 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-              />
-              <button
-                id="polishBtn"
-                type="button"
-                class="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold shadow-lg shadow-indigo-600/25 transition whitespace-nowrap cursor-pointer"
-              >
-                ✨ Add &amp; Polish Task
-              </button>
-            </div>
-            <p id="polishLoader" class="text-xs text-indigo-400 mt-2 hidden animate-pulse">
-              ✨ Polishing your study task &amp; syncing with AI Mentor...
-            </p>
+    <!-- 1. Student Context Bar -->
+    <section class="glass-card rounded-2xl p-5 shadow-xl">
+      <form id="profileForm" class="space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="mono text-xs font-medium text-emerald-400">// student_context.config</span>
+          <div class="flex items-center gap-2.5">
+            <span id="profileStatus" class="text-xs font-medium text-emerald-400 hidden">Saved ✓</span>
+            <button type="submit"
+              class="px-3 py-1 rounded-lg bg-[#16222c] hover:bg-emerald-500/15 text-slate-200 hover:text-emerald-300 text-xs font-medium border border-slate-700 hover:border-emerald-500/40 transition cursor-pointer">
+              Save Context
+            </button>
           </div>
+        </div>
 
-          <!-- Latest AI Task Breakdown Banner (3 Output Cards - Member 3: polisher.js) -->
-          <div id="polishResultSection" class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800/80">
-            <div class="rounded-lg bg-emerald-950/25 border border-emerald-500/25 p-3">
-              <div class="text-[11px] font-semibold text-emerald-400 mb-1">✨ Polished Task Goal</div>
-              <p id="polishedOutput" class="text-xs text-slate-300 leading-relaxed">
-                Add a task above to see your positive, reframed goal.
-              </p>
-            </div>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <input id="studentName" type="text" placeholder="Name (e.g., Nethsara)"
+            class="rounded-xl bg-[#090e13] border border-slate-800 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            required />
+          <input id="studentGoal" type="text" placeholder="Goal (e.g., Full-Stack & APIs)"
+            class="rounded-xl bg-[#090e13] border border-slate-800 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            required />
+          <select id="studentMood"
+            class="rounded-xl bg-[#090e13] border border-slate-800 px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+            <option value="Stressed">😫 Mood: Stressed</option>
+            <option value="Okay" selected>😐 Mood: Okay</option>
+            <option value="Motivated">🔥 Mood: Motivated</option>
+          </select>
+          <input id="studentStruggle" type="text" placeholder="Struggle (e.g., Async bugs)"
+            class="rounded-xl bg-[#090e13] border border-slate-800 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+        </div>
+      </form>
+    </section>
 
-            <div class="rounded-lg bg-amber-950/25 border border-amber-500/25 p-3">
-              <div class="text-[11px] font-semibold text-amber-400 mb-1">💛 Mentor Boost</div>
-              <p id="motivationOutput" class="text-xs text-slate-300 leading-relaxed">
-                Encouragement matched to your current mood appears here.
-              </p>
-            </div>
+    <!-- 2. To-Do List & AI Polisher Card -->
+    <section class="glass-card rounded-2xl p-6 shadow-2xl space-y-6">
 
-            <div class="rounded-lg bg-indigo-950/30 border border-indigo-500/25 p-3">
-              <div class="text-[11px] font-semibold text-indigo-400 mb-1">🎯 15-Min First Step</div>
-              <p id="nextStepOutput" class="text-xs text-slate-300 leading-relaxed">
-                Your immediate micro-step to start the task appears here.
-              </p>
-            </div>
-          </div>
+      <!-- Input Bar -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>Study To-Do List</span>
+          </h2>
+          <span id="logCount"
+            class="mono px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+            0 Tasks
+          </span>
+        </div>
 
-          <!-- Interactive To-Do List / Before vs. After Growth List (Feature 4 - Member 1: mentor-chat.js) -->
-          <div class="pt-1">
-            <div class="flex items-center justify-between text-xs text-slate-400 mb-2.5 px-1">
-              <span>Today's Tasks (Polished Goal vs. Original Note)</span>
-              <span>Check off as you complete</span>
-            </div>
-
-            <div id="timelineList" class="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
-              <div class="text-center py-8 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
-                Your study to-do list is empty. Add your first task above to get started!
-              </div>
-            </div>
-          </div>
-
-        </section>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input id="studyLogInput" type="text"
+            placeholder="Add a study task... (e.g., Fix MySQL connection error, feeling stuck today)"
+            class="flex-1 rounded-xl bg-[#090e13] border border-slate-700/80 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            onkeydown="if(event.key==='Enter') handlePolishTask()" />
+          <button id="polishBtn" type="button" onclick="handlePolishTask()"
+            class="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 text-sm font-bold shadow-lg shadow-emerald-500/20 transition whitespace-nowrap cursor-pointer">
+            ✨ Add &amp; Polish Task
+          </button>
+        </div>
+        <p id="polishLoader" class="text-xs text-emerald-400 mt-2.5 hidden animate-pulse">
+          ⚡ Polishing task &amp; syncing context with AI Mentor...
+        </p>
       </div>
 
-      <!-- SIDEBAR (RIGHT 4 COLS): Personal AI Mentor Chatbot (Feature 3 - Member 1: mentor-chat.js) -->
-      <aside class="lg:col-span-4 lg:sticky lg:top-20">
-        <section class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl flex flex-col h-[640px]">
+      <!-- 3 AI Output Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        <div class="rounded-xl bg-[#090e13]/90 border border-emerald-500/25 p-4">
+          <div class="text-xs font-semibold text-emerald-400 mb-1.5">✨ Polished Goal</div>
+          <p id="polishedOutput" class="text-xs text-slate-300 leading-relaxed">
+            Add a task above to reframe it into a clear, actionable goal.
+          </p>
+        </div>
 
-          <!-- Mentor Header -->
-          <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/95 rounded-t-2xl">
-            <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-base">
-                🧠
-              </div>
-              <div>
-                <h2 class="text-sm font-bold text-white">AI Study Mentor</h2>
-                <p class="text-[11px] text-emerald-400 flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
-                  Knows your profile &amp; to-do list
-                </p>
-              </div>
-            </div>
+        <div class="rounded-xl bg-[#090e13]/90 border border-slate-800 p-4">
+          <div class="text-xs font-semibold text-amber-400 mb-1.5">💛 Mentor Boost</div>
+          <p id="motivationOutput" class="text-xs text-slate-300 leading-relaxed">
+            Encouragement matched to your current mood appears here.
+          </p>
+        </div>
+
+        <div class="rounded-xl bg-[#090e13]/90 border border-slate-800 p-4">
+          <div class="text-xs font-semibold text-cyan-400 mb-1.5">🎯 15-Min First Step</div>
+          <p id="nextStepOutput" class="text-xs text-slate-300 leading-relaxed">
+            Your immediate micro-step to start right away appears here.
+          </p>
+        </div>
+      </div>
+
+      <!-- Interactive To-Do Checklist -->
+      <div class="pt-2">
+        <div class="flex items-center justify-between text-xs text-slate-400 mb-3 px-1">
+          <span>Today's Tasks (Polished vs. Original)</span>
+          <span>Click checkbox to complete</span>
+        </div>
+
+        <div id="timelineList" class="space-y-2.5">
+          <div class="text-center py-10 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
+            Your study to-do list is empty. Add your first task above!
           </div>
-
-          <!-- Scrollable Chat Messages -->
-          <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs leading-relaxed">
-            <div class="bg-slate-800/90 border border-slate-700/70 rounded-2xl rounded-tl-sm p-3.5 text-slate-200 max-w-[92%]">
-              Hey! I'm <strong>Mastermind</strong>, your personal mentor. Add tasks to your To-Do List on the left—I'll read your goals, mood, and tasks so you can ask me what to tackle first or how to get unstuck!
-            </div>
-          </div>
-
-          <!-- Chat Input -->
-          <form id="chatForm" class="p-3 border-t border-slate-800 bg-slate-950/60 rounded-b-2xl flex gap-2">
-            <input
-              id="chatInput"
-              type="text"
-              placeholder="Ask your mentor about your tasks..."
-              class="flex-1 rounded-xl bg-slate-900 border border-slate-700 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-              required
-            />
-            <button
-              id="sendChatBtn"
-              type="submit"
-              class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold transition cursor-pointer"
-            >
-              Send
-            </button>
-          </form>
-
-        </section>
-      </aside>
-
-    </div>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <!-- Conflict-Free Team Scripts -->
-  <script src="polisher.js"></script>
-  <script src="mentor-chat.js"></script>
+  <!-- ===================================================================== -->
+  <!-- FLOATING BOTTOM-RIGHT AI MENTOR WIDGET (Matches Portfolio UI)         -->
+  <!-- ===================================================================== -->
+  <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+
+    <!-- Popup Chat Window -->
+    <div id="mentorChatWindow"
+      class="hidden chat-popup-enter mb-3 w-[340px] sm:w-[380px] h-[480px] rounded-2xl bg-[#0f171e] border border-emerald-500/35 shadow-2xl shadow-black/80 flex flex-col overflow-hidden">
+
+      <!-- Widget Header -->
+      <div class="px-4 py-3.5 bg-[#131e27] border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-sm">
+            🤖
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-white">Mastermind AI Mentor</h3>
+            <p class="text-[11px] text-emerald-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              Synced with your To-Do list
+            </p>
+          </div>
+        </div>
+        <button type="button" onclick="toggleChatWidget()"
+          class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Chat Messages -->
+      <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs leading-relaxed">
+        <div class="bg-[#16222c] border border-slate-800 rounded-2xl rounded-tl-sm p-3 text-slate-200 max-w-[88%]">
+          Hey! I'm <strong>Mastermind AI</strong>. Add tasks to your To-Do list, and ask me what to prioritize or how to
+          fix any blocker!
+        </div>
+      </div>
+
+      <!-- Chat Input Form -->
+      <form id="chatForm" class="p-3 border-t border-slate-800 bg-[#0b1116] flex gap-2">
+        <input id="chatInput" type="text" placeholder="Ask your AI mentor..."
+          class="flex-1 rounded-xl bg-[#131d26] border border-slate-700 px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+          required />
+        <button id="sendChatBtn" type="submit"
+          class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 text-xs font-bold transition cursor-pointer">
+          Send
+        </button>
+      </form>
+    </div>
+
+    <!-- Floating Emerald Action Button -->
+    <button id="chatToggleBtn" type="button" onclick="toggleChatWidget()" title="Chat with AI Study Mentor"
+      class="w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/30 flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        stroke-width="2.2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- FRONTEND LOGIC CONNECTED TO LIVE VERCEL BACKEND                       -->
+  <!-- ===================================================================== -->
+  <script>
+    const API_URL = "https://mastermind-ai-backend.vercel.app/api/mentor";
+
+    let studentProfile = JSON.parse(localStorage.getItem("mm_profile")) || {
+      name: "",
+      goal: "",
+      mood: "Okay",
+      struggle: ""
+    };
+    let tasks = JSON.parse(localStorage.getItem("mm_tasks")) || [];
+
+    // Initialize UI on Load
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("studentName").value = studentProfile.name;
+      document.getElementById("studentGoal").value = studentProfile.goal;
+      document.getElementById("studentMood").value = studentProfile.mood || "Okay";
+      document.getElementById("studentStruggle").value = studentProfile.struggle;
+      renderTasks();
+    });
+
+    // Toggle Floating AI Widget
+    function toggleChatWidget() {
+      const win = document.getElementById("mentorChatWindow");
+      win.classList.toggle("hidden");
+      if (!win.classList.contains("hidden")) {
+        document.getElementById("chatInput").focus();
+      }
+    }
+
+    // Save Student Context
+    document.getElementById("profileForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      studentProfile = {
+        name: document.getElementById("studentName").value.trim(),
+        goal: document.getElementById("studentGoal").value.trim(),
+        mood: document.getElementById("studentMood").value,
+        struggle: document.getElementById("studentStruggle").value.trim()
+      };
+      localStorage.setItem("mm_profile", JSON.stringify(studentProfile));
+      const status = document.getElementById("profileStatus");
+      status.classList.remove("hidden");
+      setTimeout(() => status.classList.add("hidden"), 2000);
+    });
+
+    // 1-Click Demo Data Fill
+    document.getElementById("demoBtn").addEventListener("click", () => {
+      document.getElementById("studentName").value = "Nethsara";
+      document.getElementById("studentGoal").value = "Full-Stack APIs & Cybersecurity";
+      document.getElementById("studentMood").value = "Stressed";
+      document.getElementById("studentStruggle").value = "Handling API rate limits & async errors";
+      document.getElementById("studyLogInput").value = "Fix MySQL connection timeout and test Vercel API endpoint";
+      document.getElementById("profileForm").dispatchEvent(new Event("submit"));
+    });
+
+    // Add & Polish Task (POST mode: "polish")
+    async function handlePolishTask() {
+      const input = document.getElementById("studyLogInput");
+      const btn = document.getElementById("polishBtn");
+      const loader = document.getElementById("polishLoader");
+      const text = input.value.trim();
+
+      if (!text) return;
+
+      btn.disabled = true;
+      loader.classList.remove("hidden");
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: "polish",
+            text,
+            studentProfile
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to polish task");
+
+        // Update 3 Output Cards
+        document.getElementById("polishedOutput").textContent = data.polished;
+        document.getElementById("motivationOutput").textContent = data.motivation;
+        document.getElementById("nextStepOutput").textContent = data.nextStep;
+
+        // Save to To-Do List
+        tasks.unshift({
+          id: Date.now(),
+          original: text,
+          polished: data.polished,
+          nextStep: data.nextStep,
+          done: false
+        });
+        localStorage.setItem("mm_tasks", JSON.stringify(tasks));
+        input.value = "";
+        renderTasks();
+      } catch (err) {
+        alert("Backend Error: " + err.message);
+      } finally {
+        btn.disabled = false;
+        loader.classList.add("hidden");
+      }
+    }
+
+    // Render Interactive To-Do List
+    function renderTasks() {
+      const list = document.getElementById("timelineList");
+      document.getElementById("logCount").textContent = `${tasks.length} Task${tasks.length === 1 ? "" : "s"}`;
+
+      if (tasks.length === 0) {
+        list.innerHTML = `<div class="text-center py-10 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">Your study to-do list is empty. Add your first task above!</div>`;
+        return;
+      }
+
+      list.innerHTML = tasks.map(t => `
+                <div class="flex items-start justify-between gap-3 p-3.5 rounded-xl bg-[#090e13] border ${t.done ? 'border-emerald-500/20 opacity-60' : 'border-slate-800 hover:border-slate-700'} transition">
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleTask(${t.id})"
+                            class="mt-1 w-4 h-4 accent-emerald-500 rounded cursor-pointer" />
+                        <div class="space-y-1">
+                            <p class="text-xs font-semibold ${t.done ? 'line-through text-slate-500' : 'text-white'}">${t.polished}</p>
+                            <p class="text-[11px] text-slate-400">Original: "${t.original}"</p>
+                            ${t.nextStep ? `<p class="text-[11px] text-emerald-400">🎯 Step: ${t.nextStep}</p>` : ""}
+                        </div>
+                    </div>
+                    <button onclick="deleteTask(${t.id})" class="text-slate-500 hover:text-rose-400 text-xs px-1.5 py-0.5 cursor-pointer">✕</button>
+                </div>
+            `).join("");
+    }
+
+    function toggleTask(id) {
+      tasks = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
+      localStorage.setItem("mm_tasks", JSON.stringify(tasks));
+      renderTasks();
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      localStorage.setItem("mm_tasks", JSON.stringify(tasks));
+      renderTasks();
+    }
+
+    // Floating AI Mentor Chat (POST mode: "chat")
+    document.getElementById("chatForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = document.getElementById("chatInput");
+      const btn = document.getElementById("sendChatBtn");
+      const box = document.getElementById("chatMessages");
+      const chatMessage = input.value.trim();
+
+      if (!chatMessage) return;
+
+      // User Bubble
+      box.innerHTML += `<div class="ml-auto bg-emerald-500 text-slate-950 font-medium rounded-2xl rounded-tr-sm px-3.5 py-2.5 max-w-[85%]">${chatMessage}</div>`;
+      input.value = "";
+      btn.disabled = true;
+
+      // Loading Bubble
+      const loadId = "load-" + Date.now();
+      box.innerHTML += `<div id="${loadId}" class="bg-[#16222c] border border-slate-800 rounded-2xl rounded-tl-sm p-3 text-slate-400 max-w-[85%] animate-pulse">Thinking...</div>`;
+      box.scrollTop = box.scrollHeight;
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: "chat",
+            studentProfile,
+            studyHistory: tasks,
+            chatMessage
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Chat error");
+
+        document.getElementById(loadId).outerHTML =
+          `<div class="bg-[#16222c] border border-slate-800 rounded-2xl rounded-tl-sm p-3 text-slate-200 max-w-[88%]">${data.reply}</div>`;
+      } catch (err) {
+        document.getElementById(loadId).outerHTML =
+          `<div class="bg-rose-950/50 border border-rose-500/30 rounded-2xl p-3 text-rose-300 max-w-[88%]">Error: ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        box.scrollTop = box.scrollHeight;
+      }
+    });
+  </script>
 </body>
+
 </html>
