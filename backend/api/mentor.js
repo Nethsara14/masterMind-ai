@@ -2,7 +2,7 @@ async function askGemini(systemPrompt, userMessage, apiKeys) {
     // 1st try: Primary key + gemini-3.8-flash | 2nd try (503 spike awoth): Backup key + flash-lite
     const attempts = [
         { key: apiKeys[0], model: 'gemini-3.8-flash' },
-        { key: apiKeys[1] || apiKeys[0], model: 'gemini-3.8-flash-lite' },
+        { key: apiKeys[1] || apiKeys[0], model: 'gemini-3.8-flash' },
         { key: apiKeys[2] || apiKeys[0], model: 'gemini-3.8-flash' },
     ];
 
