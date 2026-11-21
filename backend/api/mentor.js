@@ -1,15 +1,13 @@
 export default async function handler(req, res) {
-    // CORS Headers (Frontend team එකට localhost සහ live domain වලින් connect වෙන්න)
+    // CORS Headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // Browser Preflight Request (OPTIONS) handle කිරීම
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
-    // POST requests වලට පමණක් ඉඩ දීම
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed. Please use POST.' });
     }
@@ -21,7 +19,11 @@ export default async function handler(req, res) {
 
     try {
         const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
-        const { mode, text, studentProfile, studyHistory, chatMessage } = body;
+        const { mode, studentProfile, studyHistory } = body;
+
+        // Frontend team එක වෙනස් key names පාවිච්චි කළත් support වෙන්න fallbacks
+        const rawText = body.text || body.task || body.rawTask || '';
+        const rawChatMessage = body.chatMessage || body.message || '';
 
         if (!mode) {
             return res.status(400).json({ error: "Missing 'mode' parameter ('polish' or 'chat')." });
@@ -29,23 +31,25 @@ export default async function handler(req, res) {
 
         const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
+        const formattedProfile = typeof studentProfile === 'object' && studentProfile !== null ? JSON.stringify(studentProfile) : studentProfile || 'Not provided';
+
         // =========================================================================
         // 1. POLISHER ENDPOINT (mode === "polish")
         // Returns: { polished, motivation, nextStep }
         // =========================================================================
         if (mode === 'polish') {
-            if (!text || !text.trim()) {
+            if (!rawText.trim()) {
                 return res.status(400).json({ error: "Missing 'text' field for polish mode." });
             }
 
-            const prompt = `You are an academic study assistant. Analyze and polish the student's raw study note or entry below.
-Return a strict JSON object with exactly these three string keys:
-1. "polished": A clear, well-structured, grammatically refined version of the student's note.
-2. "motivation": A short, genuine, and encouraging motivational message acknowledging their progress.
-3. "nextStep": One concrete, actionable next step they should take in their studies.
+            const prompt = `You are Mastermind, an encouraging AI study assistant. A student added a raw study task/note below.
+Using their Student Context (especially their current mood, goal, and struggle if provided), return a strict JSON object with exactly three string fields:
+1. "polished": Reframe the raw task into a clear, positive, actionable study goal (1-2 concise sentences).
+2. "motivation": A short, empathetic mentor boost tailored directly to their current mood (e.g., calming if Stressed, energizing if Motivated, supportive if Okay).
+3. "nextStep": One concrete 15-minute immediate micro-step they can do right now to start this task.
 
-Student Entry:
-"""${text.trim()}"""`;
+Student Context: ${formattedProfile}
+Raw Study Task: """${rawText.trim()}"""`;
 
             const response = await fetch(GEMINI_URL, {
                 method: 'POST',
@@ -72,12 +76,12 @@ Student Entry:
                 throw new Error(data.error?.message || 'Gemini API error in polish mode.');
             }
 
-            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!rawText) {
+            const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!responseText) {
                 throw new Error('Empty response received from Gemini.');
             }
 
-            const cleanJson = rawText.replace(/```json|```/g, '').trim();
+            const cleanJson = responseText.replace(/```json|```/g, '').trim();
             const parsedResult = JSON.parse(cleanJson);
 
             return res.status(200).json({
@@ -89,22 +93,21 @@ Student Entry:
 
         // =========================================================================
         // 2. MENTOR CHAT ENDPOINT (mode === "chat")
-        // Uses: studentProfile, studyHistory, chatMessage -> Returns: { reply }
+        // Uses: studentProfile, studyHistory (To-Do list), chatMessage -> { reply }
         // =========================================================================
         if (mode === 'chat') {
-            if (!chatMessage || !chatMessage.trim()) {
+            if (!rawChatMessage.trim()) {
                 return res.status(400).json({ error: "Missing 'chatMessage' field for chat mode." });
             }
 
-            const formattedProfile = typeof studentProfile === 'object' && studentProfile !== null ? JSON.stringify(studentProfile) : studentProfile || 'Not provided';
+            const formattedHistory = typeof studyHistory === 'object' && studyHistory !== null ? JSON.stringify(studyHistory) : studyHistory || 'No tasks added yet';
 
-            const formattedHistory = typeof studyHistory === 'object' && studyHistory !== null ? JSON.stringify(studyHistory) : studyHistory || 'Not provided';
-
-            const systemPrompt = `You are MasterMind AI, a supportive, insightful, and practical personal study mentor.
-Tailor your guidance using the student's profile and study history below. Keep answers clear, encouraging, and directly helpful.
+            const systemPrompt = `You are Mastermind, a personal AI Study Mentor inside a student's To-Do & Study Workspace.
+You have full visibility into the student's profile (name, goal, mood, struggle) and their current To-Do List / study history (including completed and pending tasks).
+Give personalized, practical, and concise advice. Reference their actual tasks, mood, or struggles naturally so they feel understood.
 
 Student Profile: ${formattedProfile}
-Study History: ${formattedHistory}`;
+Student To-Do List & Study History: ${formattedHistory}`;
 
             const response = await fetch(GEMINI_URL, {
                 method: 'POST',
@@ -116,7 +119,7 @@ Study History: ${formattedHistory}`;
                     contents: [
                         {
                             role: 'user',
-                            parts: [{ text: chatMessage.trim() }],
+                            parts: [{ text: rawChatMessage.trim() }],
                         },
                     ],
                 }),
