@@ -6,7 +6,7 @@ This document outlines the team structure, individual responsibilities, and the 
 
 ## Team Members & Responsibilities
 
-### 1. Sasindu Nethsara Karanayaka (Project Lead & Backend / Core Mentor)
+### 1. Sasindu Nethsara Karanayaka ( )
 - **GitHub:** [@Nethsara14](https://github.com/Nethsara14)
 - **Assigned Module:** `backend/api/mentor.js` & `mentor-chat.js`
 - **Responsibilities:**
@@ -17,7 +17,7 @@ This document outlines the team structure, individual responsibilities, and the 
 
 ---
 
-### 2. [Member 2 Name] ([Role — e.g., Frontend UI & Study Workspace])
+### 2. [Member 2 Name] ( )
 - **GitHub:** [@username](https://github.com/username)
 - **Assigned Module:** `fontend/index.html` / `storage.js` / `timer.js` *(Update file name)*
 - **Responsibilities:**
@@ -27,7 +27,7 @@ This document outlines the team structure, individual responsibilities, and the 
 
 ---
 
-### 3. [Member 3 Name] ([Role — e.g., AI Task Polisher & UX Integration])
+### 3. [Member 3 Name] ( )
 - **GitHub:** [@username](https://github.com/username)
 - **Assigned Module:** `polisher.js`
 - **Responsibilities:**
