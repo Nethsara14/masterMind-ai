@@ -19,7 +19,7 @@ This document outlines the team structure, individual responsibilities, and the 
 
 ### 2. K.M. Pasindu Hirushan (Member-02)
 - **GitHub:** [@Hirushan450](https://github.com/Hirushan450)
-- **Assigned Module:** `fontend/index.html`, `backend/api/mentor.js`
+- **Assigned Module:** `index.html`, `backend/api/mentor.js`
 - **Responsibilities:**
   - *Built the responsive dark-mode study workspace dashboard and interactive To-Do list using HTML5 and Tailwind CSS.*
   - *Implemented browser localStorage state persistence for student context profiles (mm_profile) and study logs (mm_tasks).*
@@ -29,12 +29,11 @@ This document outlines the team structure, individual responsibilities, and the 
 ---
 
 ### 3. Kaveesha Hirushan (Member-03)
-- **GitHub:** [@username](https://github.com/username)
-- **Assigned Module:** `polisher.js`
+- **GitHub:** [@kaveesha-dev](https://github.com/kaveesha-dev)
+- **Assigned Module:** `index.html`
 - **Responsibilities:**
-  - Built the task-polishing module (`mode: "polish"`) to convert rough study thoughts into structured goals, motivational notes, and actionable next steps.
-  - *[Task 2 — e.g., Connected frontend form inputs to the `/api/mentor` endpoint and handled loading/error states]*
-  - *[Task 3]*
+  -* Stopwatch and Pomodoro timer ui part and develop logic according to the ui *
+  -* support to other contributiors for polish there codes *
 
 ---
 
