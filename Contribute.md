@@ -8,12 +8,14 @@ This document outlines the team structure, individual responsibilities, and the 
 
 ### 1. Sasindu Nethsara Karanayaka (Member-01)
 - **GitHub:** [@Nethsara14](https://github.com/Nethsara14)
-- **Assigned Module:** `backend/api/mentor.js` & `mentor-chat.js`
+- **Assigned Module:** backend create and manage, `mentor-chat.js`, & Project Architecture
 - **Responsibilities:**
+  - Conceptualized the **MasterMind AI** project idea, initialized the GitHub repository, and structured the codebase.
   - Designed and deployed the Vercel serverless backend (`mastermind-ai-backend`).
   - Integrated Google Gemini API (`gemini-3.5-flash-lite`) with rate limiting, CORS origin protection, and retry handling.
   - Built the context-aware AI mentor chat logic (`mode: "chat"`).
-  - *Add additional tasks here...*
+  - Deployed and hosted the live web application via GitHub Pages.
+  - Managed version control, semantic release tagging (`v1.0.0-beta.1`), and repository documentation.
 
 ---
 
