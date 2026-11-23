@@ -2,6 +2,8 @@
 
 Mastermind is a static study workspace with task tracking, a focus timer, AI task polishing, and a short AI mentor chat.
 
+**Live Demo:** [https://nethsara14.github.io/masterMind-ai/](https://nethsara14.github.io/masterMind-ai/)
+
 ## Architecture
 
 - **Frontend:** `index.html`, with browser `localStorage` persistence.
