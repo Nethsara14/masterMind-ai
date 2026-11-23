@@ -11,6 +11,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet" />
+    
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -214,13 +215,13 @@
         </div>
       </div>
 
-      <!-- Footer Info / Today's Total Tracked Time -->
+      <!-- Footer Info / Total Tracked Time -->
       <div class="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-800/60 text-xs text-slate-400">
         <div class="flex items-center gap-1.5">
           <span>💡 <strong>Tip:</strong> Click <span class="text-emerald-300 font-medium">"⏱️ Start"</span> on any task below to tie this timer directly to that study task!</span>
         </div>
         <div class="mono text-slate-400">
-          Total tracked today: <span id="totalFocusTimeDisplay" class="text-emerald-400 font-semibold">0s</span>
+          Total tracked overall: <span id="totalFocusTimeDisplay" class="text-emerald-400 font-semibold">0s</span>
         </div>
       </div>
     </section>
@@ -370,18 +371,122 @@
   <!-- FRONTEND LOGIC CONNECTED TO LIVE VERCEL BACKEND                       -->
   <!-- ===================================================================== -->
   <script>
-    const API_URL = "https://mastermind-ai-backend.vercel.app/api/mentor";
+    const API_URL = new URLSearchParams(window.location.search).get("api")
+      || window.MASTERMIND_API_URL
+      || "https://mastermind-ai-backend.vercel.app/api/mentor";
 
-    let studentProfile = JSON.parse(localStorage.getItem("mm_profile")) || {
+    function readStoredJson(key, fallback) {
+      try {
+        const rawValue = localStorage.getItem(key);
+        return rawValue === null ? fallback : JSON.parse(rawValue);
+      } catch {
+        try {
+          localStorage.removeItem(key);
+        } catch {
+          // Storage can be disabled by the browser; use the in-memory fallback.
+        }
+        return fallback;
+      }
+    }
+
+    function writeStoredJson(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch {
+        // The UI remains usable in private/restricted storage modes.
+      }
+    }
+
+    function safeText(value, maxLength = 500) {
+      return typeof value === "string" ? value.slice(0, maxLength) : "";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function normalizeTask(task, index) {
+      const source = task && typeof task === "object" ? task : {};
+      const parsedId = Number(source.id);
+      const parsedTimeSpent = Number(source.timeSpent);
+      return {
+        id: Number.isFinite(parsedId) ? parsedId : Date.now() + index,
+        text: safeText(source.text, 500),
+        original: safeText(source.original, 500),
+        time: safeText(source.time, 40) || "Anytime",
+        date: safeText(source.date, 60) || "Today",
+        isPolished: Boolean(source.isPolished),
+        polished: safeText(source.polished, 500),
+        motivation: safeText(source.motivation, 500),
+        nextStep: safeText(source.nextStep, 500),
+        done: Boolean(source.done),
+        polishing: false,
+        timeSpent: Number.isFinite(parsedTimeSpent) ? Math.max(0, Math.floor(parsedTimeSpent)) : 0
+      };
+    }
+
+    async function postApi(payload, timeoutMs = 25000) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify(payload)
+        });
+
+        const rawResponse = await response.text();
+        let data = {};
+        try {
+          data = rawResponse ? JSON.parse(rawResponse) : {};
+        } catch {
+          data = {};
+        }
+
+        if (!response.ok) {
+          if (response.status === 429) throw new Error(data.error || "Free AI limit reached. Please wait and try again.");
+          if (response.status === 503 || response.status === 504) throw new Error(data.error || "AI is busy right now. Please try again shortly.");
+          throw new Error(data.error || `Backend request failed (HTTP ${response.status}).`);
+        }
+
+        return data;
+      } catch (error) {
+        if (error?.name === "AbortError") throw new Error("AI request timed out. Please try again.");
+        throw error;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    const defaultProfile = {
       name: "",
       goal: "",
       mood: "Okay",
       struggle: ""
     };
-    let tasks = JSON.parse(localStorage.getItem("mm_tasks")) || [];
+
+    const storedProfile = readStoredJson("mm_profile", defaultProfile);
+    let studentProfile = storedProfile && typeof storedProfile === "object" && !Array.isArray(storedProfile)
+      ? {
+          name: safeText(storedProfile.name, 60),
+          goal: safeText(storedProfile.goal, 120),
+          mood: safeText(storedProfile.mood, 40) || "Okay",
+          struggle: safeText(storedProfile.struggle, 160)
+        }
+      : { ...defaultProfile };
+
+    const storedTasks = readStoredJson("mm_tasks", []);
+    let tasks = Array.isArray(storedTasks) ? storedTasks.map(normalizeTask) : [];
 
     // Ongoing Study Focus Timer State
-    let activeTimer = JSON.parse(localStorage.getItem("mm_active_timer")) || {
+    const defaultTimer = {
       taskId: null,
       taskTitle: "General Study Session",
       mode: "stopwatch", // 'stopwatch' | 'countdown'
@@ -390,6 +495,24 @@
       isRunning: false,
       lastStartedAt: null
     };
+
+    const storedTimer = readStoredJson("mm_active_timer", defaultTimer);
+    let activeTimer = storedTimer && typeof storedTimer === "object" && !Array.isArray(storedTimer)
+      ? { ...defaultTimer, ...storedTimer }
+      : { ...defaultTimer };
+    activeTimer.taskId = activeTimer.taskId === null || activeTimer.taskId === ""
+      ? null
+      : (Number.isFinite(Number(activeTimer.taskId)) ? Number(activeTimer.taskId) : null);
+    activeTimer.taskTitle = safeText(activeTimer.taskTitle, 500) || "General Study Session";
+    activeTimer.mode = activeTimer.mode === "countdown" ? "countdown" : "stopwatch";
+    activeTimer.targetDuration = Math.max(0, Number(activeTimer.targetDuration) || 0);
+    activeTimer.elapsedSeconds = Math.max(0, Number(activeTimer.elapsedSeconds) || 0);
+    activeTimer.isRunning = Boolean(activeTimer.isRunning);
+    activeTimer.lastStartedAt = activeTimer.lastStartedAt === null || activeTimer.lastStartedAt === ""
+      ? null
+      : (Number.isFinite(Number(activeTimer.lastStartedAt)) ? Number(activeTimer.lastStartedAt) : null);
+
+    let generalFocusSeconds = Math.max(0, Number(readStoredJson("mm_general_focus_seconds", 0)) || 0);
 
     let timerInterval = null;
 
@@ -438,7 +561,7 @@
         mood: document.getElementById("studentMood").value,
         struggle: document.getElementById("studentStruggle").value.trim()
       };
-      localStorage.setItem("mm_profile", JSON.stringify(studentProfile));
+      writeStoredJson("mm_profile", studentProfile);
       const status = document.getElementById("profileStatus");
       status.classList.remove("hidden");
       setTimeout(() => status.classList.add("hidden"), 2000);
@@ -488,7 +611,7 @@
     }
 
     function saveActiveTimer() {
-      localStorage.setItem("mm_active_timer", JSON.stringify(activeTimer));
+      writeStoredJson("mm_active_timer", activeTimer);
     }
 
     function getActiveElapsedSeconds() {
@@ -532,10 +655,24 @@
       return parts.join(" ");
     }
 
-    function calculateTotalFocusToday() {
+    function recordElapsedForActiveSession(sessionElapsed) {
+      const safeElapsed = Math.max(0, Math.floor(sessionElapsed || 0));
+      if (safeElapsed < 1) return;
+
+      const taskIndex = activeTimer.taskId === null ? -1 : tasks.findIndex(t => t.id === activeTimer.taskId);
+      if (taskIndex !== -1) {
+        tasks[taskIndex].timeSpent = (tasks[taskIndex].timeSpent || 0) + safeElapsed;
+        writeStoredJson("mm_tasks", tasks);
+      } else {
+        generalFocusSeconds += safeElapsed;
+        writeStoredJson("mm_general_focus_seconds", generalFocusSeconds);
+      }
+    }
+
+    function calculateTotalFocusOverall() {
       const taskTotal = tasks.reduce((acc, t) => acc + (t.timeSpent || 0), 0);
       const currentSession = activeTimer.isRunning ? getActiveElapsedSeconds() : (activeTimer.elapsedSeconds || 0);
-      return taskTotal + currentSession;
+      return taskTotal + generalFocusSeconds + currentSession;
     }
 
     function updateTimerLiveClocks() {
@@ -563,7 +700,7 @@
 
       const totalDisplay = document.getElementById("totalFocusTimeDisplay");
       if (totalDisplay) {
-        totalDisplay.textContent = formatDurationHuman(calculateTotalFocusToday());
+        totalDisplay.textContent = formatDurationHuman(calculateTotalFocusOverall());
       }
     }
 
@@ -574,13 +711,7 @@
       const finishedTaskTitle = activeTimer.taskTitle || "Focus Session";
       const sessionElapsed = activeTimer.targetDuration || 0;
 
-      if (activeTimer.taskId && sessionElapsed > 0) {
-        const taskIndex = tasks.findIndex(t => t.id === activeTimer.taskId);
-        if (taskIndex !== -1) {
-          tasks[taskIndex].timeSpent = (tasks[taskIndex].timeSpent || 0) + sessionElapsed;
-          localStorage.setItem("mm_tasks", JSON.stringify(tasks));
-        }
-      }
+      recordElapsedForActiveSession(sessionElapsed);
 
       activeTimer.isRunning = false;
       activeTimer.lastStartedAt = null;
@@ -741,7 +872,7 @@
 
       // Total Today
       if (totalDisplay) {
-        totalDisplay.textContent = formatDurationHuman(calculateTotalFocusToday());
+        totalDisplay.textContent = formatDurationHuman(calculateTotalFocusOverall());
       }
 
       if (activeTimer.isRunning) {
@@ -805,14 +936,7 @@
     function stopActiveTimer() {
       const sessionElapsed = getActiveElapsedSeconds();
 
-      // If active task, save sessionElapsed to task.timeSpent
-      if (activeTimer.taskId && sessionElapsed > 0) {
-        const taskIndex = tasks.findIndex(t => t.id === activeTimer.taskId);
-        if (taskIndex !== -1) {
-          tasks[taskIndex].timeSpent = (tasks[taskIndex].timeSpent || 0) + sessionElapsed;
-          localStorage.setItem("mm_tasks", JSON.stringify(tasks));
-        }
-      }
+      recordElapsedForActiveSession(sessionElapsed);
 
       // Reset timer
       activeTimer.isRunning = false;
@@ -841,7 +965,7 @@
     }
 
     function setTimerPreset(mode, durationSec) {
-      if (activeTimer.isRunning && getActiveElapsedSeconds() > 0) {
+      if (getActiveElapsedSeconds() > 0) {
         stopActiveTimer();
       }
 
@@ -859,15 +983,10 @@
       const task = tasks.find(t => t.id === id);
       if (!task) return;
 
-      // If another task was previously running, save its accumulated time first
-      if (activeTimer.isRunning && activeTimer.taskId && activeTimer.taskId !== id) {
+      // Save a running or paused session before switching to another task.
+      if (activeTimer.taskId !== id) {
         const prevElapsed = getActiveElapsedSeconds();
-        if (prevElapsed > 0) {
-          const prevTask = tasks.find(t => t.id === activeTimer.taskId);
-          if (prevTask) {
-            prevTask.timeSpent = (prevTask.timeSpent || 0) + prevElapsed;
-          }
-        }
+        recordElapsedForActiveSession(prevElapsed);
       }
 
       activeTimer.taskId = task.id;
@@ -877,7 +996,7 @@
       activeTimer.isRunning = true;
 
       saveActiveTimer();
-      localStorage.setItem("mm_tasks", JSON.stringify(tasks));
+      writeStoredJson("mm_tasks", tasks);
       startTimerInterval();
       renderTimerUI();
       renderTasks();
@@ -925,7 +1044,7 @@
       };
 
       tasks.unshift(newTask);
-      localStorage.setItem("mm_tasks", JSON.stringify(tasks));
+      writeStoredJson("mm_tasks", tasks);
       input.value = "";
       renderTasks();
     }
@@ -940,40 +1059,33 @@
       renderTasks();
 
       try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mode: "polish",
-            text: task.original || task.text,
-            studentProfile
-          })
+        const data = await postApi({
+          mode: "polish",
+          text: task.original || task.text,
+          studentProfile
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to polish task");
-
-        task.polished = data.polished;
-        task.motivation = data.motivation;
-        task.nextStep = data.nextStep;
+        task.polished = safeText(data.polished, 500) || task.original || task.text;
+        task.motivation = safeText(data.motivation, 500);
+        task.nextStep = safeText(data.nextStep, 500);
         task.isPolished = true;
 
         // If this task is active in timer, update its title display as well
         if (activeTimer.taskId === task.id) {
-          activeTimer.taskTitle = data.polished;
+          activeTimer.taskTitle = task.polished;
           saveActiveTimer();
           renderTimerUI();
         }
 
         // Update the 3 highlight cards with this polished goal
-        document.getElementById("polishedOutput").textContent = data.polished;
-        document.getElementById("motivationOutput").textContent = data.motivation;
-        document.getElementById("nextStepOutput").textContent = data.nextStep;
+        document.getElementById("polishedOutput").textContent = task.polished;
+        document.getElementById("motivationOutput").textContent = task.motivation;
+        document.getElementById("nextStepOutput").textContent = task.nextStep;
       } catch (err) {
         alert("Backend Error: " + err.message);
       } finally {
         task.polishing = false;
-        localStorage.setItem("mm_tasks", JSON.stringify(tasks));
+        writeStoredJson("mm_tasks", tasks);
         renderTasks();
       }
     }
@@ -997,6 +1109,13 @@
 
         const displaySecs = isActiveTask ? getActiveDisplaySeconds() : 0;
         const formattedCompact = formatTime(displaySecs, false);
+        const safeDate = escapeHtml(t.date || "Today");
+        const safeTime = escapeHtml(t.time || "Anytime");
+        const safePolished = escapeHtml(t.polished);
+        const safeOriginal = escapeHtml(t.original || t.text);
+        const safeRawText = escapeHtml(t.text || t.original);
+        const safeNextStep = escapeHtml(t.nextStep);
+        const safeMotivation = escapeHtml(t.motivation);
 
         return `
           <div class="p-4 rounded-xl transition space-y-3 ${
@@ -1015,10 +1134,10 @@
                   <!-- Meta badges: Date, Time, Polish status & Timer status -->
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="inline-flex items-center gap-1 text-[11px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
-                      📅 ${t.date || "Today"}
+                      📅 ${safeDate}
                     </span>
                     <span class="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-950/30 border border-emerald-800/40 px-2 py-0.5 rounded">
-                      ⏰ ${t.time || "Anytime"}
+                      ⏰ ${safeTime}
                     </span>
                     ${isPolished 
                       ? `<span class="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">✨ Polished</span>`
@@ -1045,23 +1164,23 @@
                   ${isPolished ? `
                     <div class="space-y-1">
                       <p class="text-sm font-semibold ${t.done ? 'line-through text-slate-500' : 'text-emerald-300'} leading-snug">
-                        ${t.polished}
+                        ${safePolished}
                       </p>
                       <p class="text-[11px] text-slate-400 italic">
-                        Original: "${t.original || t.text}"
+                        Original: "${safeOriginal}"
                       </p>
                     </div>
                   ` : `
                     <p class="text-sm font-medium ${t.done ? 'line-through text-slate-500' : 'text-slate-200'} leading-snug">
-                      ${t.text || t.original}
+                      ${safeRawText}
                     </p>
                   `}
 
                   <!-- Polish Actionable step / Motivation (if polished) -->
                   ${isPolished && (t.nextStep || t.motivation) ? `
                     <div class="flex flex-wrap gap-2 pt-1.5">
-                      ${t.nextStep ? `<span class="text-[11px] text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-2.5 py-1 rounded-lg">🎯 <strong>Step:</strong> ${t.nextStep}</span>` : ""}
-                      ${t.motivation ? `<span class="text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800/40 px-2.5 py-1 rounded-lg">💛 <strong>Boost:</strong> ${t.motivation}</span>` : ""}
+                      ${t.nextStep ? `<span class="text-[11px] text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-2.5 py-1 rounded-lg">🎯 <strong>Step:</strong> ${safeNextStep}</span>` : ""}
+                      ${t.motivation ? `<span class="text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800/40 px-2.5 py-1 rounded-lg">💛 <strong>Boost:</strong> ${safeMotivation}</span>` : ""}
                     </div>
                   ` : ""}
                 </div>
@@ -1120,11 +1239,11 @@
     function toggleTask(id) {
       const willBeDone = !tasks.find(t => t.id === id)?.done;
       // If the task being completed has the currently active timer, stop and log it
-      if (willBeDone && activeTimer.taskId === id && activeTimer.isRunning) {
+      if (willBeDone && activeTimer.taskId === id && getActiveElapsedSeconds() > 0) {
         stopActiveTimer();
       }
       tasks = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
-      localStorage.setItem("mm_tasks", JSON.stringify(tasks));
+      writeStoredJson("mm_tasks", tasks);
       renderTasks();
       renderTimerUI();
     }
@@ -1134,7 +1253,7 @@
         stopActiveTimer();
       }
       tasks = tasks.filter(t => t.id !== id);
-      localStorage.setItem("mm_tasks", JSON.stringify(tasks));
+      writeStoredJson("mm_tasks", tasks);
       renderTasks();
       renderTimerUI();
     }
@@ -1150,7 +1269,7 @@
       if (!chatMessage) return;
 
       // User Bubble
-      box.innerHTML += `<div class="ml-auto bg-emerald-500 text-slate-950 font-medium rounded-2xl rounded-tr-sm px-3.5 py-2.5 max-w-[85%]">${chatMessage}</div>`;
+      box.innerHTML += `<div class="ml-auto bg-emerald-500 text-slate-950 font-medium rounded-2xl rounded-tr-sm px-3.5 py-2.5 max-w-[85%]">${escapeHtml(chatMessage)}</div>`;
       input.value = "";
       btn.disabled = true;
 
@@ -1160,31 +1279,24 @@
       box.scrollTop = box.scrollHeight;
 
       try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mode: "chat",
-            studentProfile,
-            studyHistory: tasks.map(t => ({
-              done: t.done,
-              task: t.isPolished ? t.polished : (t.text || t.original),
-              time: t.time,
-              date: t.date,
-              timeSpent: t.timeSpent ? formatDurationHuman(t.timeSpent) : undefined
-            })),
-            chatMessage
-          })
+        const data = await postApi({
+          mode: "chat",
+          studentProfile,
+          studyHistory: tasks.slice(0, 5).map(t => ({
+            done: t.done,
+            task: t.isPolished ? t.polished : (t.text || t.original),
+            time: t.time,
+            date: t.date,
+            timeSpent: t.timeSpent ? formatDurationHuman(t.timeSpent) : undefined
+          })),
+          chatMessage
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Chat error");
-
         document.getElementById(loadId).outerHTML =
-          `<div class="bg-[#16222c] border border-slate-800 rounded-2xl rounded-tl-sm p-3 text-slate-200 max-w-[88%]">${data.reply}</div>`;
+          `<div class="bg-[#16222c] border border-slate-800 rounded-2xl rounded-tl-sm p-3 text-slate-200 max-w-[88%]">${escapeHtml(data.reply || "No reply received.")}</div>`;
       } catch (err) {
         document.getElementById(loadId).outerHTML =
-          `<div class="bg-rose-950/50 border border-rose-500/30 rounded-2xl p-3 text-rose-300 max-w-[88%]">Error: ${err.message}</div>`;
+          `<div class="bg-rose-950/50 border border-rose-500/30 rounded-2xl p-3 text-rose-300 max-w-[88%]">Error: ${escapeHtml(err.message)}</div>`;
       } finally {
         btn.disabled = false;
         box.scrollTop = box.scrollHeight;

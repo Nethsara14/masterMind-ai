@@ -1,5 +1,15 @@
 {
     "name": "mastermind-backend",
     "version": "1.0.0",
-    "type": "module"
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "npx vercel dev",
+        "start": "npm run dev",
+        "check": "node --check api/mentor.js",
+        "test": "node --test --test-isolation=none"
+    },
+    "engines": {
+        "node": ">=18"
+    }
 }
