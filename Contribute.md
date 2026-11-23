@@ -6,7 +6,7 @@ This document outlines the team structure, individual responsibilities, and the 
 
 ## Team Members & Responsibilities
 
-### 1. Sasindu Nethsara Karanayaka ( )
+### 1. Sasindu Nethsara Karanayaka (Member-01)
 - **GitHub:** [@Nethsara14](https://github.com/Nethsara14)
 - **Assigned Module:** `backend/api/mentor.js` & `mentor-chat.js`
 - **Responsibilities:**
@@ -17,7 +17,7 @@ This document outlines the team structure, individual responsibilities, and the 
 
 ---
 
-### 2. K.M. Pasindu Hirushan( )
+### 2. K.M. Pasindu Hirushan (Member-02)
 - **GitHub:** [@Hirushan450](https://github.com/Hirushan450)
 - **Assigned Module:** `fontend/index.html`, `backend/api/mentor.js`
 - **Responsibilities:**
@@ -28,7 +28,7 @@ This document outlines the team structure, individual responsibilities, and the 
 
 ---
 
-### 3. [Member 3 Name] ( )
+### 3. Kaveesha Hirushan (Member-03)
 - **GitHub:** [@username](https://github.com/username)
 - **Assigned Module:** `polisher.js`
 - **Responsibilities:**
