@@ -44,13 +44,13 @@ Never place `GEMINI_API_KEY` in `index.html` or commit `backend/.env`.
    python -m http.server 5500
    ```
 
-3. Open the frontend with the local API URL:
+3. Open the frontend:
 
    ```text
-   http://localhost:5500/?api=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fmentor
+   http://localhost:5500/
    ```
 
-Without the `api` query parameter, the frontend continues to use the production backend.
+On localhost, the frontend calls the local backend at `http://localhost:3000/api/mentor`. On other hosts, it calls the deployed backend.
 
 ## Deploy the backend to Vercel
 

@@ -371,9 +371,10 @@
   <!-- FRONTEND LOGIC CONNECTED TO LIVE VERCEL BACKEND                       -->
   <!-- ===================================================================== -->
   <script>
-    const API_URL = new URLSearchParams(window.location.search).get("api")
-      || window.MASTERMIND_API_URL
-      || "https://mastermind-ai-backend.vercel.app/api/mentor";
+    const isLocalPreview = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+    const API_URL = isLocalPreview
+      ? "http://localhost:3000/api/mentor"
+      : "https://mastermind-ai-backend.vercel.app/api/mentor";
 
     function readStoredJson(key, fallback) {
       try {
@@ -430,7 +431,7 @@
       };
     }
 
-    async function postApi(payload, timeoutMs = 25000) {
+    async function postApi(payload, timeoutMs = 45000) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
