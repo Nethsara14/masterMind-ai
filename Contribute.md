@@ -17,13 +17,14 @@ This document outlines the team structure, individual responsibilities, and the 
 
 ---
 
-### 2. [Member 2 Name] ( )
-- **GitHub:** [@username](https://github.com/username)
-- **Assigned Module:** `fontend/index.html` / `storage.js` / `timer.js` *(Update file name)*
+### 2. K.M. Pasindu Hirushan( )
+- **GitHub:** [@Hirushan450](https://github.com/Hirushan450)
+- **Assigned Module:** `fontend/index.html`, `backend/api/mentor.js`
 - **Responsibilities:**
-  - *[Task 1 — e.g., Built the main study workspace dashboard, task list UI, and Pomodoro focus timer]*
-  - *[Task 2 — e.g., Implemented browser `localStorage` persistence for daily study logs and student profile]*
-  - *[Task 3]*
+  - *Built the responsive dark-mode study workspace dashboard and interactive To-Do list using HTML5 and Tailwind CSS.*
+  - *Implemented browser localStorage state persistence for student context profiles (mm_profile) and study logs (mm_tasks).*
+  - *Designed the separate task addition flow with auto-detected date badges, study time scheduling, and on-demand "✨ Polish" AI triggers.*
+  - *Connected the frontend with the backend API and ensured seamless integration of all project features.*
 
 ---
 
