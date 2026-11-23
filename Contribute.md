@@ -32,8 +32,8 @@ This document outlines the team structure, individual responsibilities, and the 
 - **GitHub:** [@kaveesha-dev](https://github.com/kaveesha-dev)
 - **Assigned Module:** `index.html`
 - **Responsibilities:**
-  -  * Stopwatch and Pomodoro timer ui part and develop logic according to the ui *
-  -  * Support other contributors in polishing their code *
+  -  *Stopwatch and Pomodoro timer ui part and develop logic according to the ui.*
+  -  *Support other contributors in polishing their code.*
 
 ---
 
